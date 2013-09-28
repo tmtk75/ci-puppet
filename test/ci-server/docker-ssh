@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+usage() {
+  cat<<EOF
+usage: `basename $0` <container-id>
+EOF
+  exit 1
+}
+if [ -z "$1" ]; then usage; fi
+
+username=core
+hostname=localhost
+container_id=$1
+shift
+
+docker_port() {
+  curl -s localhost:4243/v1.4/containers/$1/json \
+   | ruby -e 'require "json"; print (JSON.parse STDIN.read)["NetworkSettings"]["PortMapping"]["Tcp"]["22"], "\n"'
+}
+
+tcp22=`docker_port $container_id`
+ssh -t \
+    -o UserKnownHostsFile=/dev/null \
+    -o StrictHostKeyChecking=no \
+    -p $tcp22 -l $username $hostname $*

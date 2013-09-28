@@ -1,0 +1,5 @@
+Host github.com
+  StrictHostKeyChecking no
+  UserKnownHostsFile=/dev/null
+  User git
+  IdentityFile ~/.ssh/github.pem

@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+usage() {
+  cat<<EOF
+usage: `basename $0` <manifest> [options]
+
+  ex) `basename $0` /etc/puppet/manifests/site.pp --debug --certname=webapp.example.com
+
+  --certname:    should be given to choose node you want.
+
+EOF
+}
+
+if [ -z "$1" ]; then
+  usage
+  exit 1
+fi
+
+sudo puppet apply --no-daemonize --onetime $*

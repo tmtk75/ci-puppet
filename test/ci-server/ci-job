@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+usage() {
+  cat<<EOF
+usage: `basename $0` <image-tag> <manifests-dir> <modules-dir> <certname>
+
+  e.g) `basename $0` ci/default \$WORKSPACE/manifests \$WORKSPACE/modules webapp.example.com
+
+EOF
+  exit 1
+}
+
+image_tag=$1
+manifests_dir=$2
+modules_dir=$3
+certname=$4
+
+if [ -z "$certname" ]; then usage; fi
+
+hostname=`ruby -e 'print ARGV[0].split(".")[0]' $certname`
+here=`dirname $0`
+cd $here
+
+## spawn a new container from the image-tag
+container_id=`sudo docker run -d $image_tag`
+echo "spawned container_id: $container_id"
+sleep 1
+
+## apply given manifests
+$here/docker-apply $container_id $manifests_dir $modules_dir $certname -- --debug
+code=$?
+echo "docker-apply exited with $code."
+
+## shoot serverspec to the container
+if [ $code -eq 0 ]; then
+  cd $here/..
+  CONTAINER_ID=$container_id rake docker:$hostname
+  code=$?
+fi
+
+echo "docker stop `sudo docker stop $container_id`"
+exit $code

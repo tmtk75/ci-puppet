@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+usage() {
+  cat<<EOF
+usage: `basename $0` <container-id> [options]
+
+EOF
+}
+
+container_id=$1
+shift 1
+
+docker_port() {
+  curl -s localhost:4243/v1.4/containers/$1/json \
+   | ruby -e 'require "json"; print (JSON.parse STDIN.read)["NetworkSettings"]["PortMapping"]["Tcp"]["22"], "\n"'
+}
+
+_rsync() {
+  tcp22=`docker_port $container_id`
+  rsync -av --inplace \
+        --rsh="ssh -p$tcp22 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no" \
+        $*
+}
+
+_rsync $*
+

@@ -1,0 +1,23 @@
+require 'rake'
+require 'rspec/core/rake_task'
+
+
+task :default do puts "Type `rake -T` to see all tasks\n" end
+
+def taskdef(target, fqdn)
+  namespace target do
+    host = fqdn.split('.')[0]
+    desc "#{host}"
+    RSpec::Core::RakeTask.new(host) do |t|
+      ENV['TEST_TARGET'] = target
+      ENV['TARGET_HOST'] = fqdn
+      t.pattern = "spec/#{host}/*_spec.rb"
+    end
+  end
+end
+
+["local", "docker"].each do |target|
+  ["webapp.example.com"].each {|host|
+    taskdef target, host
+  }
+end

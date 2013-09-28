@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+usage() {
+  cat<<EOF
+usage: `basename $0` [options] <container-id> <manifests-dir> <modules-dir> <certname> -- [args for puppet]
+
+EOF
+  exit 1
+}
+
+container_id=$1
+manifests_dir=$2
+modules_dir=$3
+certname=$4
+shift 4
+
+sleep 1   ## NOTE: to wait for sshd launching on the container
+PUPPET_HOME=./puppet
+here=`dirname $0`
+$here/docker-rsync $container_id $manifests_dir core@localhost:$PUPPET_HOME
+$here/docker-rsync $container_id $modules_dir   core@localhost:$PUPPET_HOME
+
+## apply manifests
+$here/docker-ssh $container_id \
+  sudo puppet apply \
+    $PUPPET_HOME/`basename $manifests_dir`/site.pp \
+    --modulepath=$PUPPET_HOME/`basename $modules_dir` \
+    --certname=$certname $*
+
+## to return exit code of puppet apply
+exit $?
